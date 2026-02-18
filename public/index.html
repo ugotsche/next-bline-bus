@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Next B-Line — Warriewood</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #0a0e17;
+    color: #e4e8f1;
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, #0f1724 0%, #141c2e 100%);
+    border-bottom: 2px solid #00b5e2;
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .header-left h1 span {
+    color: #00b5e2;
+  }
+
+  .header-left .subtitle {
+    font-size: 0.8rem;
+    color: #7a8599;
+    margin-top: 0.15rem;
+  }
+
+  .last-updated {
+    font-size: 0.75rem;
+    color: #556;
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  .last-updated .time {
+    color: #7a8599;
+    font-variant-numeric: tabular-nums;
+  }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .departure-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .departure {
+    background: linear-gradient(135deg, #131a2b 0%, #161e30 100%);
+    border: 1px solid #1e2a42;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0 1rem;
+    align-items: center;
+    animation: fadeIn 0.35s ease;
+    transition: border-color 0.2s;
+  }
+
+  .departure:hover {
+    border-color: #00b5e2;
+  }
+
+  .departure.imminent {
+    border-left: 3px solid #00e07b;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .route-badge {
+    background: #00b5e2;
+    color: #000;
+    font-weight: 800;
+    font-size: 1.1rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    grid-row: span 2;
+    letter-spacing: 0.03em;
+  }
+
+  .destination {
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .countdown {
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-align: right;
+    grid-row: span 2;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    line-height: 1.1;
+  }
+
+  .countdown small {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: #7a8599;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .countdown.now {
+    color: #00e07b;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    color: #7a8599;
+  }
+
+  .status {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .status.on-time     { background: #0a2e1a; color: #00e07b; }
+  .status.late        { background: #2e1a0a; color: #ff8c42; }
+  .status.early       { background: #0a1a2e; color: #42b4ff; }
+  .status.scheduled   { background: #1a1a2e; color: #8888aa; }
+
+  .times {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .error-msg, .loading-msg, .empty-msg {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #556;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .error-msg { color: #ff6b6b; }
+
+  .loading-msg::after {
+    content: '';
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #334;
+    border-top-color: #00b5e2;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .refresh-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: #00b5e2;
+    transition: width 1s linear;
+    z-index: 100;
+  }
+
+  @media (max-width: 420px) {
+    header { padding: 1rem; }
+    .header-left h1 { font-size: 1.15rem; }
+    .departure { padding: 0.85rem 1rem; gap: 0 0.75rem; }
+    .route-badge { width: 2.6rem; height: 2.6rem; font-size: 0.95rem; }
+    .countdown { font-size: 1.3rem; }
+    .destination { font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="refresh-bar" id="refreshBar"></div>
+
+<header>
+  <div class="header-left">
+    <h1><span>B-Line</span> Departures</h1>
+    <div class="subtitle">Warriewood — Pittwater Rd towards City</div>
+  </div>
+  <div class="last-updated" id="lastUpdated">Loading…</div>
+</header>
+
+<main>
+  <div id="content" class="departure-list">
+    <div class="loading-msg">Fetching departures</div>
+  </div>
+</main>
+
+<script>
+const REFRESH_INTERVAL = 30000;
+let refreshTimer = null;
+let barTimer = null;
+
+function formatTime(isoStr) {
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function statusClass(status) {
+  if (status === 'On time') return 'on-time';
+  if (status === 'Scheduled') return 'scheduled';
+  if (status.includes('late')) return 'late';
+  if (status.includes('early')) return 'early';
+  return '';
+}
+
+function renderDepartures(departures) {
+  if (!departures.length) {
+    return '<div class="empty-msg">No upcoming B1 departures found.<br>Services may have ended for the day.</div>';
+  }
+
+  return departures.map(dep => {
+    const mins = dep.minsAway;
+    const countdownText = mins === 0 ? 'Now' : mins;
+    const countdownUnit = mins === 0 ? '' : '<small>min</small>';
+    const nowClass = mins <= 2 ? 'now' : '';
+    const imminentClass = mins <= 2 ? 'imminent' : '';
+
+    const sched = formatTime(dep.scheduledTime);
+    const est = formatTime(dep.estimatedTime);
+    const timeStr = dep.isRealtime && sched !== est
+      ? `${sched} → ${est}`
+      : sched;
+
+    return `
+      <div class="departure ${imminentClass}">
+        <div class="route-badge">${dep.route}</div>
+        <div class="destination">${dep.destination}</div>
+        <div class="countdown ${nowClass}">${countdownText}${countdownUnit}</div>
+        <div class="meta">
+          <span class="status ${statusClass(dep.status)}">${dep.status}</span>
+          <span class="times">${timeStr}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function fetchDepartures() {
+  const content = document.getElementById('content');
+  const updated = document.getElementById('lastUpdated');
+
+  try {
+    const res = await fetch('/api/departures');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Recalculate minsAway on the client side for accuracy
+    const now = new Date();
+    data.departures.forEach(d => {
+      d.minsAway = Math.max(0, Math.round((new Date(d.estimatedTime) - now) / 60000));
+    });
+
+    content.innerHTML = renderDepartures(data.departures);
+
+    const t = new Date(data.updatedAt);
+    updated.innerHTML = `Updated<br><span class="time">${t.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>`;
+  } catch (err) {
+    content.innerHTML = `<div class="error-msg">Could not load departures.<br>${err.message}</div>`;
+  }
+}
+
+function startRefreshBar() {
+  const bar = document.getElementById('refreshBar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  // Force reflow
+  void bar.offsetWidth;
+  bar.style.transition = `width ${REFRESH_INTERVAL}ms linear`;
+  bar.style.width = '100%';
+}
+
+function tick() {
+  fetchDepartures();
+  startRefreshBar();
+}
+
+// Update countdowns every 15s between fetches
+function startCountdownUpdater() {
+  setInterval(() => {
+    document.querySelectorAll('.departure').forEach(el => {
+      // Lightweight: the next full fetch will correct everything
+    });
+  }, 15000);
+}
+
+tick();
+refreshTimer = setInterval(tick, REFRESH_INTERVAL);
+</script>
+</body>
+</html>
