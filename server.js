@@ -94,8 +94,8 @@ app.get('/api/departures', async (req, res) => {
 
     res.json({ departures, updatedAt: now.toISOString() });
   } catch (err) {
-    console.error('Fetch error:', err.message);
-    res.status(500).json({ error: 'Failed to fetch departures' });
+    console.error('Fetch error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to fetch departures', detail: err.message });
   }
 });
 
