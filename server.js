@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const fetch = require('node-fetch');
 const path = require('path');
 
 const app = express();
@@ -13,6 +12,10 @@ if (!API_KEY) {
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, hasKey: !!API_KEY, keyLen: API_KEY?.length, node: process.version });
+});
 
 app.get('/api/departures', async (req, res) => {
   const now = new Date();
