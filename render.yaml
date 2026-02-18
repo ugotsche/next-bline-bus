@@ -1,0 +1,11 @@
+services:
+  - type: web
+    runtime: node
+    name: next-bline-bus
+    region: singapore
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: TFNSW_API_KEY
+        sync: false
